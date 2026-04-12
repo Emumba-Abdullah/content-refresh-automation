@@ -40,14 +40,13 @@ async function main() {
   console.log(`Skipped breakdown:`);
   const reasons: SkipReason[] = [
     "already-in-templates",
-    "already-in-templates-canonical",
     "already-open-pr",
     "previously-rejected",
   ];
   for (const reason of reasons) {
     const count = tally.get(reason) ?? 0;
     if (count > 0) {
-      console.log(`  ${reason.padEnd(34)}: ${count}`);
+      console.log(`  ${reason.padEnd(26)}: ${count}`);
     }
   }
   console.log();
@@ -59,7 +58,7 @@ async function main() {
   if (debug.canonicalKeyMatches > 0) {
     console.log();
     console.log(`Canonical-only matches (same article, different URL shape):`);
-    for (const s of skipped.filter((x) => x.reason === "already-in-templates-canonical")) {
+    for (const s of skipped.filter((x) => x.reason === "already-in-templates" && x.matchedKey && !x.matchedKey.startsWith("https"))) {
       console.log(`  "${s.title}"`);
       console.log(`    candidate URL: ${s.website}`);
       console.log(`    canonical key: ${s.matchedKey}`);

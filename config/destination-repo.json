@@ -3,5 +3,6 @@
   "repo": "postgres-hub",
   "baseBranch": "main",
   "templatePath": "static/templates.json",
-  "rejectedLabel": "resource-rejected"
+  "rejectedLabel": "resource-rejected",
+  "localCheckoutPath": "C:\\Users\\Emumba\\test\\postgres-hub"
 }

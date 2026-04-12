@@ -4,7 +4,7 @@ import { canonicalKey } from "../utils/canonicalKey";
 import { loadDestinationTemplates } from "../github/loadDestinationTemplates";
 import { findExistingResourceState, ExistingState } from "../github/findExistingResourceState";
 
-export type SkipReason = "already-in-templates" | "already-in-templates-canonical" | ExistingState;
+export type SkipReason = "already-in-templates" | ExistingState;
 
 export interface SkippedCandidate {
   title: string;
@@ -80,14 +80,14 @@ export async function filterNewCandidates(
       continue;
     }
 
-    // 2. Canonical identity key match
+    // 2. Canonical identity key match (treated as already-in-templates — content already accepted)
     const ck = canonicalKey(candidate.website);
     if (ck && existingCanonical.has(ck)) {
       canonicalKeyMatches++;
       skipped.push({
         title: candidate.title,
         website: candidate.website,
-        reason: "already-in-templates-canonical",
+        reason: "already-in-templates",
         matchedKey: ck,
       });
       continue;

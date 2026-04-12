@@ -4,12 +4,23 @@ on:
   issues:
     types: [opened]
 
+# Restrict the built-in GITHUB_TOKEN to read-only so that the workflow
+# can never accidentally push or merge directly to any branch on this repo.
+# All writes to the destination repo use DESTINATION_REPO_TOKEN instead.
+permissions:
+  contents: read
+  issues: read
+
 jobs:
   run-content-refresh:
     if: github.event.issue.title == 'Content Refresh'
     runs-on: ubuntu-latest
     env:
       LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      DESTINATION_REPO_TOKEN: ${{ secrets.DESTINATION_REPO_TOKEN }}
+      # Cap PRs to 1 for the first end-to-end run.
+      # Increase once the pipeline is validated.
+      PR_LIMIT: "1"
 
     steps:
       - name: Checkout automation repo
@@ -23,14 +34,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run full pipeline
-        run: |
-          npx ts-node src/test/runCleanCandidatesTest.ts
-          npx ts-node src/test/runSelectionTest.ts
-          npx ts-node src/test/runBatchClassificationTest.ts 20
-          npx ts-node src/test/runPostClassificationReview.ts
+      # ── Phase 1: Build candidates ─────────────────────────────────────────
+      - name: Fetch and clean candidates
+        run: npx ts-node src/test/runCleanCandidatesTest.ts
 
+      - name: Select candidates by keyword score
+        run: npx ts-node src/test/runSelectionTest.ts
+
+      - name: Classify candidates (LLM)
+        run: npx ts-node src/test/runBatchClassificationTest.ts 20
+
+      - name: Post-classification rule review
+        run: npx ts-node src/test/runPostClassificationReview.ts
+
+      # ── Phase 2: Filter and create PRs ───────────────────────────────────
+      - name: Filter new candidates and create destination PRs
+        run: npx ts-node src/pipeline/runPipeline.ts
+
+      # ── Summary ──────────────────────────────────────────────────────────
       - name: Print output summary
+        if: always()
         run: |
-          echo "Final candidates:"
-          head -n 50 output/final-candidates.json
+          echo "=== Filter results ==="
+          cat output/skipped-existing.json | head -n 40 || true
+          echo "=== PR creation results ==="
+          cat output/pr-creation-results.json || true
