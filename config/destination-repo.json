@@ -1,0 +1,7 @@
+{
+  "owner": "Azure-Samples",
+  "repo": "postgres-hub",
+  "baseBranch": "main",
+  "templatePath": "static/templates.json",
+  "rejectedLabel": "resource-rejected"
+}
