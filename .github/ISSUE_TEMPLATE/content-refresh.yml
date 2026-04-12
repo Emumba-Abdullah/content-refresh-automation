@@ -1,17 +1,39 @@
 name: Content Refresh
-description: Trigger an automated content refresh run
-title: "Content Refresh"
-labels: ["content-refresh"]
-body:
-  - type: markdown
-    attributes:
-      value: |
-        Opening this issue will trigger the content refresh workflow.
-  - type: textarea
-    id: notes
-    attributes:
-      label: Notes (optional)
-      description: Any context or scope notes for this refresh run.
-      placeholder: e.g. Focus on AI/genai docs only
-    validations:
-      required: false
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  run-content-refresh:
+    if: github.event.issue.title == 'Content Refresh'
+    runs-on: ubuntu-latest
+    env:
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+
+    steps:
+      - name: Checkout automation repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Load environment variables
+        run: echo "Running content pipeline..."
+
+      - name: Run full pipeline
+        run: |
+          npx ts-node src/test/runCleanCandidatesTest.ts
+          npx ts-node src/test/runSelectionTest.ts
+          npx ts-node src/test/runBatchClassificationTest.ts 20
+          npx ts-node src/test/runPostClassificationReview.ts
+
+      - name: Print output summary
+        run: |
+          echo "Final candidates:"
+          head -n 50 output/final-candidates.json
