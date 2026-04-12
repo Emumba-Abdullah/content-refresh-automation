@@ -1,0 +1,17 @@
+name: Content Refresh
+description: Trigger an automated content refresh run
+title: "Content Refresh"
+labels: ["content-refresh"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Opening this issue will trigger the content refresh workflow.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (optional)
+      description: Any context or scope notes for this refresh run.
+      placeholder: e.g. Focus on AI/genai docs only
+    validations:
+      required: false

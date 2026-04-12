@@ -1,0 +1,31 @@
+name: Content Refresh
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  content-refresh:
+    if: ${{ github.event.issue.title == 'Content Refresh' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Log issue information
+        run: |
+          echo "Triggered by issue #${{ github.event.issue.number }}"
+          echo "Title    : ${{ github.event.issue.title }}"
+          echo "Author   : ${{ github.event.issue.user.login }}"
+          echo "Created  : ${{ github.event.issue.created_at }}"
+          echo "URL      : ${{ github.event.issue.html_url }}"
