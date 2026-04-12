@@ -1,0 +1,22 @@
+{
+  "name": "content-refresh-automation",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test:validation": "ts-node src/test/runValidationTest.ts"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^0.22.35",
+    "@types/dotenv": "^6.1.1",
+    "@types/node": "^20.12.7",
+    "@types/node-fetch": "^2.6.13",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.4.2",
+    "node-fetch": "^2.7.0",
+    "openai": "^6.34.0"
+  }
+}

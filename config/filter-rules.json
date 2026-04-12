@@ -1,0 +1,33 @@
+{
+  "dropTitleContains": [
+    "delete ",
+    "reset ",
+    "restart ",
+    "start ",
+    "stop ",
+    "approve ",
+    "reject ",
+    "list all backups",
+    "show virtual endpoints",
+    "update virtual endpoints",
+    "delete virtual endpoints",
+    "add firewall rules",
+    "delete firewall rules",
+    "add private endpoint connections",
+    "delete private endpoint connections",
+    "approve private endpoint connections",
+    "reject private endpoint connections",
+    "troubleshoot ",
+    "error ",
+    "errors ",
+    "release notes",
+    "maintenance release"
+  ],
+  "dropUrlContains": [
+    "/release-notes/",
+    "/release-notes-maintenance/",
+    "/troubleshoot/",
+    "//azure/"
+  ],
+  "requireNonEmptyDescription": true
+}

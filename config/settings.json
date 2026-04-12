@@ -1,0 +1,6 @@
+{
+  "minTags": 1,
+  "maxTags": 12,
+  "oneResourcePerPR": true,
+  "imageGenerationEnabled": false
+}

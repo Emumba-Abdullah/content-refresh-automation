@@ -1,0 +1,30 @@
+{
+  "dropDomains": [
+    {
+      "domain": "azure.microsoft.com",
+      "reason": "Non-doc domain: Azure marketing/support/portal page, not a Learn article"
+    },
+    {
+      "domain": "stackoverflow.com",
+      "reason": "Community index: Stack Overflow tag page, not a Microsoft Learn doc"
+    }
+  ],
+  "dropUrlContains": [
+    {
+      "pattern": "/sample-scripts-azure-cli",
+      "reason": "Generic index: CLI sample scripts landing page, not a real article"
+    },
+    {
+      "pattern": "/policy-reference",
+      "reason": "Generic index: Azure Policy reference landing page, not a real article"
+    },
+    {
+      "pattern": "/scale/how-to-auto-grow-storage",
+      "reason": "Infra/ops: storage autogrow is pure infrastructure configuration"
+    },
+    {
+      "pattern": "/configure-maintain/how-to-configure-scheduled-maintenance",
+      "reason": "Infra/ops: maintenance scheduling is pure operations, not developer-facing"
+    }
+  ]
+}
