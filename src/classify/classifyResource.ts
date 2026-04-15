@@ -32,8 +32,7 @@ function readJsonFile<T>(relativePath: string): T {
 
 const allowedTagsConfig = readJsonFile<AllowedTagsConfig>("config/allowed-tags.json");
 
-// Note: filename has a typo ("leaning" not "learning") — kept as-is to match existing file
-const learningPathsConfig = readJsonFile<LearningPathsConfig>("config/leaning-paths.json");
+const learningPathsConfig = readJsonFile<LearningPathsConfig>("config/learning-paths.json");
 
 const client = new OpenAI({
   apiKey: process.env.LLM_API_KEY,

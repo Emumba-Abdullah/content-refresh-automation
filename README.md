@@ -282,7 +282,7 @@ Post-classification rules applied after LLM output:
 - `dropDomains` — block non-Learn domains that slipped through
 - `dropUrlContains` — block known junk URL patterns (index pages, infra/ops)
 
-### `config/leaning-paths.json`
+### `config/learning-paths.json`
 
 Learning path category definitions:
 
@@ -325,7 +325,7 @@ content-refresh-automation/
 │   ├── allowed-tags.json              # Valid LLM output tag vocabulary
 │   ├── destination-repo.json          # Destination repo coordinates
 │   ├── filter-rules.json              # Pre-classification drop rules
-│   ├── leaning-paths.json             # Learning path category list
+│   ├── learning-paths.json            # Learning path category list
 │   ├── post-classification-review.json # Post-LLM drop rules
 │   └── settings.json                  # Global pipeline settings
 │
