@@ -4,7 +4,7 @@ import { CandidateResource } from "../types/resource";
 import { normalizeUrl } from "../utils/normalizeUrl";
 
 type FilterRules = {
-  dropTitleContains: string[];
+  addTitleContains: string[];
   dropUrlContains: string[];
   requireNonEmptyDescription: boolean;
 };
@@ -37,14 +37,11 @@ function hasBrokenUrl(url: string): boolean {
   }
 }
 
-function titleMatchesDropRule(title: string): string | null {
+function titlePassesWhitelist(title: string): boolean {
   const normalized = title.trim().toLowerCase();
-  for (const phrase of filterRules.dropTitleContains) {
-    if (normalized.includes(phrase.toLowerCase())) {
-      return `Dropped by title rule: "${phrase}"`;
-    }
-  }
-  return null;
+  return filterRules.addTitleContains.some((phrase) =>
+    normalized.includes(phrase.toLowerCase())
+  );
 }
 
 function urlMatchesDropRule(url: string): string | null {
@@ -71,7 +68,10 @@ export function cleanCandidates(
       website: raw.website?.trim() ?? "",
       source: raw.source?.trim() ?? "",
       date: raw.date?.trim() ?? undefined,
+      userSubmitted: raw.userSubmitted,
     };
+
+    const isUserSubmitted = candidate.userSubmitted === true;
 
     if (!candidate.title) {
       removed.push({ candidate, reason: "Missing title" });
@@ -94,15 +94,18 @@ export function cleanCandidates(
       continue;
     }
 
-    const titleDropReason = titleMatchesDropRule(candidate.title);
-    if (titleDropReason) {
-      removed.push({ candidate, reason: titleDropReason });
-      continue;
-    }
+    // User-submitted URLs bypass the title whitelist and description requirement —
+    // the user explicitly chose them so no keyword gating applies.
+    if (!isUserSubmitted) {
+      if (!titlePassesWhitelist(candidate.title)) {
+        removed.push({ candidate, reason: "Title does not match any addTitleContains keyword" });
+        continue;
+      }
 
-    if (filterRules.requireNonEmptyDescription && !candidate.description?.trim()) {
-      removed.push({ candidate, reason: "Empty description" });
-      continue;
+      if (filterRules.requireNonEmptyDescription && !candidate.description?.trim()) {
+        removed.push({ candidate, reason: "Empty description" });
+        continue;
+      }
     }
 
     const normalizedUrl = normalizeUrl(candidate.website);
