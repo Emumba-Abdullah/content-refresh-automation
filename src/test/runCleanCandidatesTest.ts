@@ -1,12 +1,30 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fetchMicrosoftLearnPostgresCandidates } from "../fetchers/microsoftLearnPostgres";
+import { fetchUserProvidedCandidates, parseUserUrls } from "../fetchers/userProvidedUrls";
 import { cleanCandidates } from "../process/cleanCandidates";
 
 const OUTPUT_PATH = path.resolve(process.cwd(), "output/cleaned-candidates.json");
+const USER_SUBMITTED_PATH = path.resolve(process.cwd(), "output/user-submitted-urls.json");
 
 async function main() {
-  const fetched = await fetchMicrosoftLearnPostgresCandidates();
+  const msLearnCandidates = await fetchMicrosoftLearnPostgresCandidates();
+
+  const issueBody = process.env.ISSUE_BODY ?? "";
+  const userUrls = parseUserUrls(issueBody);
+  const userCandidates = await fetchUserProvidedCandidates(userUrls);
+
+  if (userCandidates.length > 0) {
+    console.log(`\nMerging ${userCandidates.length} user-provided candidate(s) into the pipeline.`);
+    fs.mkdirSync(path.dirname(USER_SUBMITTED_PATH), { recursive: true });
+    fs.writeFileSync(
+      USER_SUBMITTED_PATH,
+      JSON.stringify(userCandidates.map((c) => c.website), null, 2),
+      "utf-8"
+    );
+  }
+
+  const fetched = [...msLearnCandidates, ...userCandidates];
   const { cleaned, removed } = cleanCandidates(fetched);
 
   const reasonCounts = removed.reduce<Record<string, number>>((acc, item) => {
