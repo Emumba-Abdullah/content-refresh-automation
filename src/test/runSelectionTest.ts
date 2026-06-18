@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fetchMicrosoftLearnPostgresCandidates } from "../fetchers/microsoftLearnPostgres";
-import { cleanCandidates } from "../process/cleanCandidates";
+import { CandidateResource } from "../types/resource";
 import { selectCandidates, ScoredCandidate } from "../process/selectCandidates";
 
+const INPUT_PATH = path.resolve(process.cwd(), "output/cleaned-candidates.json");
 const OUTPUT_PATH = path.resolve(process.cwd(), "output/selected-candidates.json");
 
 function printSamples(label: string, items: ScoredCandidate[], n: number) {
@@ -20,11 +20,13 @@ function printSamples(label: string, items: ScoredCandidate[], n: number) {
 }
 
 async function main() {
-  // Load enriched candidates from cache, clean them
-  const fetched = await fetchMicrosoftLearnPostgresCandidates();
-  const { cleaned } = cleanCandidates(fetched);
+  if (!fs.existsSync(INPUT_PATH)) {
+    throw new Error(
+      `${INPUT_PATH} not found. Run runCleanCandidatesTest.ts first.`
+    );
+  }
+  const cleaned: CandidateResource[] = JSON.parse(fs.readFileSync(INPUT_PATH, "utf-8"));
 
-  // Run selection scoring
   const { high, mid, low } = selectCandidates(cleaned);
 
   console.log("\n===== SELECTION SUMMARY =====");
