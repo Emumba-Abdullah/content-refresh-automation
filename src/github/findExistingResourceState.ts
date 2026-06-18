@@ -40,13 +40,27 @@ function extractUrlFromPrBody(body: string | null): string | null {
 
 async function fetchAllPages<T>(
   baseUrl: string,
-  headers: Record<string, string>
+  headers: Record<string, string>,
+  noAuthHeaders: Record<string, string>
 ): Promise<T[]> {
   const results: T[] = [];
   let url: string | null = baseUrl;
+  let activeHeaders = headers;
 
   while (url) {
-    const res: Response = await fetch(url, { headers });
+    const res: Response = await fetch(url, { headers: activeHeaders });
+
+    // For public repos, reads don't require auth. If the token is invalid/expired,
+    // restart the pagination without it.
+    if (res.status === 401 && activeHeaders !== noAuthHeaders) {
+      console.warn(
+        `[findExistingResourceState] 401 with token — retrying without auth (public repo read).`
+      );
+      activeHeaders = noAuthHeaders;
+      results.length = 0;
+      url = baseUrl;
+      continue;
+    }
 
     if (!res.ok) {
       throw new Error(`GitHub API error at ${url}: ${res.status} ${res.statusText}`);
@@ -87,12 +101,18 @@ export async function findExistingResourceState(
     "User-Agent": "content-refresh-automation",
   };
 
+  const noAuthHeaders = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "content-refresh-automation",
+  };
+
   const result = new Map<string, ExistingState>();
 
   // Fetch all open PRs (pulls endpoint only returns PRs, never plain issues)
   const openPrs = await fetchAllPages<GitHubIssueOrPR>(
     `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=100`,
-    headers
+    headers,
+    noAuthHeaders
   );
 
   for (const pr of openPrs) {
@@ -107,7 +127,8 @@ export async function findExistingResourceState(
   // if the item has a pull_request field (i.e. it is actually a PR).
   const rejectedItems = await fetchAllPages<GitHubIssueOrPR>(
     `https://api.github.com/repos/${owner}/${repo}/issues?state=closed&labels=${encodeURIComponent(rejectedLabel)}&per_page=100`,
-    headers
+    headers,
+    noAuthHeaders
   );
 
   for (const item of rejectedItems) {
