@@ -77,6 +77,10 @@ export async function createDestinationPr(
   const branchName = buildBranchName(resource.website);
   const prBody = buildPrBody(resource);
 
+  console.log(`[debug] token prefix: ${githubToken.slice(0, 8)}... (length: ${githubToken.length})`);
+  console.log(`[debug] target: ${owner}/${repo} branch: ${baseBranch}`);
+  console.log(`[debug] new branch name: ${branchName}`);
+
   // Step 1: get base branch SHA
   const refData = await ghRequest<{ object: { sha: string } }>(
     "GET",
@@ -84,6 +88,7 @@ export async function createDestinationPr(
     githubToken
   );
   const baseSha = refData.object.sha;
+  console.log(`[debug] baseSha: ${baseSha}`);
 
   // Step 2: fetch current templates.json content + blob SHA (needed for update)
   const fileData = await ghRequest<{ content: string; sha: string; encoding: string }>(
@@ -91,6 +96,7 @@ export async function createDestinationPr(
     `/repos/${owner}/${repo}/contents/${templatePath}?ref=${encodeURIComponent(baseBranch)}`,
     githubToken
   );
+  console.log(`[debug] templates.json blob SHA: ${fileData.sha}`);
 
   if (fileData.encoding !== "base64") {
     throw new Error(`Unexpected encoding for ${templatePath}: ${fileData.encoding}`);
@@ -103,11 +109,13 @@ export async function createDestinationPr(
   const updatedContent = Buffer.from(JSON.stringify(existing, null, 2), "utf-8").toString("base64");
 
   // Step 3: create branch
+  const createRefPayload = { ref: `refs/heads/${branchName}`, sha: baseSha };
+  console.log(`[debug] POST /git/refs payload: ${JSON.stringify(createRefPayload)}`);
   await ghRequest(
     "POST",
     `/repos/${owner}/${repo}/git/refs`,
     githubToken,
-    { ref: `refs/heads/${branchName}`, sha: baseSha }
+    createRefPayload
   );
 
   // Step 4: commit updated templates.json to new branch
