@@ -35,13 +35,23 @@ export async function loadDestinationTemplates(
 
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${templatePath}?ref=${encodeURIComponent(baseBranch)}`;
 
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${githubToken}`,
-      Accept: "application/vnd.github.v3+json",
-      "User-Agent": "content-refresh-automation",
-    },
+  const baseHeaders = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "content-refresh-automation",
+  };
+
+  let res = await fetch(url, {
+    headers: { ...baseHeaders, Authorization: `Bearer ${githubToken}` },
   });
+
+  // For public repos, reads don't require auth. If the token is invalid/expired,
+  // retry without it so the dedup check still works during testing.
+  if (res.status === 401) {
+    console.warn(
+      `[loadDestinationTemplates] 401 with token — retrying without auth (public repo read).`
+    );
+    res = await fetch(url, { headers: baseHeaders });
+  }
 
   if (res.status === 404) {
     return { normalizedUrls: new Set(), canonicalKeys: new Set() };
