@@ -8,6 +8,7 @@ import { buildPrBody } from "./buildPrBody";
 
 interface DestinationRepoConfig {
   owner: string;
+  forkOwner?: string;
   repo: string;
   baseBranch: string;
   templatePath: string;
@@ -54,49 +55,44 @@ async function ghRequest<T>(
 }
 
 /**
- * Full remote PR creation flow for a single resource:
- *   1. Transform candidate → destination-ready Resource
- *   2. Fetch current SHA of base branch tip
- *   3. Fetch current templates.json content + SHA (for update)
- *   4. Append the new resource to the array
- *   5. Create branch from base branch tip
- *   6. Commit updated templates.json to new branch
- *   7. Open PR into base branch
- *   8. Add "needs-review" label to PR
+ * Fork-based PR creation flow:
+ *   1. Read base branch SHA + templates.json from the ORIGINAL repo (source of truth)
+ *   2. Create branch on the FORK (where we have write access)
+ *   3. Commit updated templates.json to the FORK branch
+ *   4. Open PR from FORK:branch → ORIGINAL:main
+ *   5. Try to add label on the original (graceful — may not have permission)
  *
- * Never pushes to main. Never merges. One resource per PR. No local disk writes.
+ * When forkOwner is not set in config, falls back to writing directly to owner/repo
+ * (original behaviour for when direct write access is available).
  */
 export async function createDestinationPr(
   candidate: ClassifiedResource,
   imagePath: string,
   githubToken: string
 ): Promise<PrCreationResult> {
-  const { owner, repo, baseBranch, templatePath } = loadConfig();
+  const { owner, forkOwner, repo, baseBranch, templatePath } = loadConfig();
+
+  // Write target: fork if configured, otherwise original
+  const writeOwner = forkOwner ?? owner;
 
   const resource: Resource = transformForDestination(candidate, imagePath);
   const branchName = buildBranchName(resource.website);
   const prBody = buildPrBody(resource);
 
-  console.log(`[debug] token prefix: ${githubToken.slice(0, 8)}... (length: ${githubToken.length})`);
-  console.log(`[debug] target: ${owner}/${repo} branch: ${baseBranch}`);
-  console.log(`[debug] new branch name: ${branchName}`);
-
-  // Step 1: get base branch SHA
+  // Step 1: get base branch SHA from ORIGINAL (ensures branch is based on latest)
   const refData = await ghRequest<{ object: { sha: string } }>(
     "GET",
     `/repos/${owner}/${repo}/git/ref/heads/${baseBranch}`,
     githubToken
   );
   const baseSha = refData.object.sha;
-  console.log(`[debug] baseSha: ${baseSha}`);
 
-  // Step 2: fetch current templates.json content + blob SHA (needed for update)
+  // Step 2: fetch templates.json from ORIGINAL (content + blob SHA)
   const fileData = await ghRequest<{ content: string; sha: string; encoding: string }>(
     "GET",
     `/repos/${owner}/${repo}/contents/${templatePath}?ref=${encodeURIComponent(baseBranch)}`,
     githubToken
   );
-  console.log(`[debug] templates.json blob SHA: ${fileData.sha}`);
 
   if (fileData.encoding !== "base64") {
     throw new Error(`Unexpected encoding for ${templatePath}: ${fileData.encoding}`);
@@ -106,22 +102,24 @@ export async function createDestinationPr(
     Buffer.from(fileData.content, "base64").toString("utf-8")
   );
   existing.push(resource);
-  const updatedContent = Buffer.from(JSON.stringify(existing, null, 2), "utf-8").toString("base64");
+  const updatedContent = Buffer.from(
+    JSON.stringify(existing, null, 2),
+    "utf-8"
+  ).toString("base64");
 
-  // Step 3: create branch
-  const createRefPayload = { ref: `refs/heads/${branchName}`, sha: baseSha };
-  console.log(`[debug] POST /git/refs payload: ${JSON.stringify(createRefPayload)}`);
+  // Step 3: create branch on FORK from original's latest SHA
   await ghRequest(
     "POST",
-    `/repos/${owner}/${repo}/git/refs`,
+    `/repos/${writeOwner}/${repo}/git/refs`,
     githubToken,
-    createRefPayload
+    { ref: `refs/heads/${branchName}`, sha: baseSha }
   );
 
-  // Step 4: commit updated templates.json to new branch
+  // Step 4: commit updated templates.json to FORK branch
+  // blob SHA is the same as original since branch starts from the same commit
   await ghRequest(
     "PUT",
-    `/repos/${owner}/${repo}/contents/${templatePath}`,
+    `/repos/${writeOwner}/${repo}/contents/${templatePath}`,
     githubToken,
     {
       message: `content-refresh: add "${resource.title}"`,
@@ -131,7 +129,8 @@ export async function createDestinationPr(
     }
   );
 
-  // Step 5: open PR
+  // Step 5: open PR on ORIGINAL repo — head uses fork owner prefix when fork is configured
+  const prHead = forkOwner ? `${forkOwner}:${branchName}` : branchName;
   const pr = await ghRequest<{ number: number; html_url: string }>(
     "POST",
     `/repos/${owner}/${repo}/pulls`,
@@ -139,18 +138,22 @@ export async function createDestinationPr(
     {
       title: `[Content Refresh] ${resource.title}`,
       body: prBody,
-      head: branchName,
+      head: prHead,
       base: baseBranch,
     }
   );
 
-  // Step 6: add label
-  await ghRequest(
-    "POST",
-    `/repos/${owner}/${repo}/issues/${pr.number}/labels`,
-    githubToken,
-    { labels: ["needs-review"] }
-  );
+  // Step 6: add label on original — graceful, not fatal if permission denied
+  try {
+    await ghRequest(
+      "POST",
+      `/repos/${owner}/${repo}/issues/${pr.number}/labels`,
+      githubToken,
+      { labels: ["needs-review"] }
+    );
+  } catch (err) {
+    console.warn(`[createDestinationPr] Could not add label (skipping): ${(err as Error).message}`);
+  }
 
   return {
     branchName,

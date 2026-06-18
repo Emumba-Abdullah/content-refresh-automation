@@ -1,5 +1,6 @@
 {
   "owner": "Azure-Samples",
+  "forkOwner": "Emumba-Abdullah",
   "repo": "postgres-hub",
   "baseBranch": "main",
   "templatePath": "static/templates.json",
