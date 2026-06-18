@@ -24,11 +24,11 @@ export async function fetchUserProvidedCandidates(
       title: url,
       description: "",
       website: url,
-      source: "user-submitted",
+      source: url,
       userSubmitted: true,
     };
     const scraped = await scrapeResourcePage(stub);
-    results.push({ ...scraped, source: "user-submitted", userSubmitted: true });
+    results.push({ ...scraped, source: url, userSubmitted: true });
   }
 
   return results;
