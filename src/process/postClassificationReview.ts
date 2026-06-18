@@ -2,6 +2,17 @@ import * as fs from "fs";
 import * as path from "path";
 import { ClassifiedResource } from "../types/resource";
 
+function loadUserSubmittedUrls(): Set<string> {
+  const filePath = path.join(process.cwd(), "output", "user-submitted-urls.json");
+  if (!fs.existsSync(filePath)) return new Set();
+  try {
+    const urls: string[] = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    return new Set(urls);
+  } catch {
+    return new Set();
+  }
+}
+
 interface DomainRule {
   domain: string;
   reason: string;
@@ -41,6 +52,7 @@ export function runPostClassificationReview(
 ): ReviewResult {
   const configPath = path.join(process.cwd(), "config", "post-classification-review.json");
   const config: ReviewConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  const userSubmittedUrls = loadUserSubmittedUrls();
 
   const kept: ClassifiedResource[] = [];
   const dropped: DroppedItem[] = [];
@@ -48,6 +60,13 @@ export function runPostClassificationReview(
   for (const item of candidates) {
     const url = item.website ?? "";
     const hostname = getHostname(url);
+
+    // User-submitted URLs bypass automated domain/URL-pattern drop rules —
+    // the user explicitly requested them and may intentionally link non-Learn domains.
+    if (userSubmittedUrls.has(url)) {
+      kept.push(item);
+      continue;
+    }
 
     const domainMatch = config.dropDomains.find((r) => hostname === r.domain);
     if (domainMatch) {

@@ -25,3 +25,14 @@ body:
       placeholder: "20"
     validations:
       required: false
+
+  - type: textarea
+    id: user_urls
+    attributes:
+      label: Additional URLs
+      description: Optional — add one or more URLs to scrape and classify alongside the standard sources (one URL per line).
+      placeholder: |
+        https://learn.microsoft.com/en-us/azure/postgresql/...
+        https://techcommunity.microsoft.com/...
+    validations:
+      required: false

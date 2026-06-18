@@ -6,6 +6,7 @@ export type CandidateResource = {
   website: string;
   source: string;
   date?: string;
+  userSubmitted?: boolean;
 };
 
 export type Resource = {

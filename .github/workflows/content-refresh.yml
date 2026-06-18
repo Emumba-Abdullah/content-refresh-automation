@@ -21,6 +21,8 @@ jobs:
       # Cap PRs to 1 for the first end-to-end run.
       # Increase once the pipeline is validated.
       PR_LIMIT: "1"
+      # Full issue body is passed to Node scripts so they can parse user-provided URLs.
+      ISSUE_BODY: ${{ github.event.issue.body }}
 
     steps:
       - name: Checkout automation repo
