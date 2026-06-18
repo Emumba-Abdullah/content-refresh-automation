@@ -27,6 +27,7 @@ const HIGH_SIGNALS: string[] = [
   "build",
   "create",
   "develop",
+  "development",
   "ai",
   "vector",
   "embedding",
@@ -44,6 +45,11 @@ const HIGH_SIGNALS: string[] = [
   "example",
   "workshop",
   "lab",
+  "app",
+  "run",
+  "search",
+  "engineer",
+  "graph",
 ];
 
 // +1 signals — useful but less focused

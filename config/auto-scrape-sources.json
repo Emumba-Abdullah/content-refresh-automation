@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Azure Database for PostgreSQL Docs",
+    "url": "https://learn.microsoft.com/en-us/azure/postgresql/",
+    "linkPattern": "/azure/postgresql/"
+  },
+  {
+    "name": "Microsoft Azure HorizonDB Docs",
+    "url": "https://learn.microsoft.com/en-us/azure/horizondb/",
+    "linkPattern": "/azure/horizondb/"
+  },
+  {
+    "name": "Microsoft Blog for PostgreSQL",
+    "url": "https://techcommunity.microsoft.com/category/azure-database-for-postgresql/blog/adforpostgresql",
+    "linkPattern": "techcommunity.microsoft.com/blog/"
+  }
+]

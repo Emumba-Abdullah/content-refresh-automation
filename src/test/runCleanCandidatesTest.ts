@@ -2,14 +2,18 @@ import fs from "node:fs";
 import path from "node:path";
 import { fetchMicrosoftLearnPostgresCandidates } from "../fetchers/microsoftLearnPostgres";
 import { fetchUserProvidedCandidates, parseUserUrls } from "../fetchers/userProvidedUrls";
+import { scrapeAllLandingPages } from "../fetchers/scrapeLandingPage";
 import { cleanCandidates } from "../process/cleanCandidates";
+import { scrapeAll } from "../fetchers/scrapeResourcePage";
 
 const OUTPUT_PATH = path.resolve(process.cwd(), "output/cleaned-candidates.json");
 const USER_SUBMITTED_PATH = path.resolve(process.cwd(), "output/user-submitted-urls.json");
 
-async function main() {
-  const msLearnCandidates = await fetchMicrosoftLearnPostgresCandidates();
+// Set USER_URLS_ONLY=true to skip MS Learn + auto-scrape sources and only process
+// user-provided URLs from the issue body. Useful for fast local testing.
+const USER_URLS_ONLY = process.env.USER_URLS_ONLY === "true";
 
+async function main() {
   const issueBody = process.env.ISSUE_BODY ?? "";
   const userUrls = parseUserUrls(issueBody);
   const userCandidates = await fetchUserProvidedCandidates(userUrls);
@@ -24,7 +28,27 @@ async function main() {
     );
   }
 
-  const fetched = [...msLearnCandidates, ...userCandidates];
+  let fetched = [...userCandidates];
+
+  if (!USER_URLS_ONLY) {
+    console.log("\nFetching Microsoft Learn PostgreSQL candidates...");
+    const msLearnCandidates = await fetchMicrosoftLearnPostgresCandidates();
+    fetched = [...fetched, ...msLearnCandidates];
+
+    console.log("\nFetching candidates from auto-scrape landing pages...");
+    const autoScrapeConfig = JSON.parse(
+      fs.readFileSync(path.resolve(process.cwd(), "config/auto-scrape-sources.json"), "utf-8")
+    );
+    const landingPageStubs = await scrapeAllLandingPages(autoScrapeConfig);
+    if (landingPageStubs.length > 0) {
+      console.log(`Enriching ${landingPageStubs.length} landing page links via page scrape...`);
+      const enriched = await scrapeAll(landingPageStubs, 5);
+      fetched = [...fetched, ...enriched];
+    }
+  } else {
+    console.log("\n[USER_URLS_ONLY mode] Skipping MS Learn and auto-scrape sources.");
+  }
+
   const { cleaned, removed } = cleanCandidates(fetched);
 
   const reasonCounts = removed.reduce<Record<string, number>>((acc, item) => {
