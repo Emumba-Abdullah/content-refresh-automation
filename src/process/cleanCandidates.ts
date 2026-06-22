@@ -5,7 +5,6 @@ import { normalizeUrl } from "../utils/normalizeUrl";
 
 type FilterRules = {
   addTitleContains: string[];
-  dropUrlContains: string[];
   requireNonEmptyDescription: boolean;
 };
 
@@ -44,16 +43,6 @@ function titlePassesWhitelist(title: string): boolean {
   );
 }
 
-function urlMatchesDropRule(url: string): string | null {
-  const normalized = url.trim().toLowerCase();
-  for (const phrase of filterRules.dropUrlContains) {
-    if (normalized.includes(phrase.toLowerCase())) {
-      return `Dropped by URL rule: "${phrase}"`;
-    }
-  }
-  return null;
-}
-
 export function cleanCandidates(
   candidates: CandidateResource[]
 ): CleanCandidatesResult {
@@ -85,12 +74,6 @@ export function cleanCandidates(
 
     if (hasBrokenUrl(candidate.website) || hasBrokenUrl(candidate.source)) {
       removed.push({ candidate, reason: "Broken or invalid URL" });
-      continue;
-    }
-
-    const websiteDropReason = urlMatchesDropRule(candidate.website);
-    if (websiteDropReason) {
-      removed.push({ candidate, reason: websiteDropReason });
       continue;
     }
 

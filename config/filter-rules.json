@@ -82,11 +82,5 @@
     "web app",
     "workshop"
   ],
-  "dropUrlContains": [
-    "/release-notes/",
-    "/release-notes-maintenance/",
-    "/troubleshoot/",
-    "//azure/"
-  ],
   "requireNonEmptyDescription": true
 }
