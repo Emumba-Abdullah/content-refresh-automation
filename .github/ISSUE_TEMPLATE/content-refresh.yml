@@ -9,15 +9,6 @@ body:
         Open this issue to trigger the content refresh automation.
 
   - type: input
-    id: source_scope
-    attributes:
-      label: Source scope
-      description: Optional source scope, for example microsoft-learn
-      placeholder: microsoft-learn
-    validations:
-      required: false
-
-  - type: input
     id: candidate_limit
     attributes:
       label: Candidate limit
