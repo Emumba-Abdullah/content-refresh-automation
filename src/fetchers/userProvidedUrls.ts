@@ -1,6 +1,14 @@
 import { CandidateResource } from "../types/resource";
 import { scrapeResourcePage } from "./scrapeResourcePage";
 
+export function parseCandidateLimit(issueBody: string): number | null {
+  const match = issueBody.match(/### Candidate limit[\r\n]+([\s\S]*?)(?:[\r\n]+###|$)/);
+  if (!match) return null;
+  const value = match[1].trim();
+  const parsed = parseInt(value, 10);
+  return isNaN(parsed) || parsed <= 0 ? null : parsed;
+}
+
 export function parseUserUrls(issueBody: string): string[] {
   const match = issueBody.match(/### Additional URLs[\r\n]+([\s\S]*?)(?:[\r\n]+###|$)/);
   if (!match) return [];

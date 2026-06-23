@@ -12,8 +12,11 @@ body:
     id: candidate_limit
     attributes:
       label: Candidate limit
-      description: Optional max number of candidates to process in this run
-      placeholder: "20"
+      description: >
+        Optional — controls how many HIGH-scoring candidates are sent to the LLM for classification
+        and how many PRs are created in this run. Defaults to 1 if not provided.
+        Increase carefully: each candidate costs an LLM call and opens a PR in the destination repo.
+      placeholder: "1"
     validations:
       required: false
 
